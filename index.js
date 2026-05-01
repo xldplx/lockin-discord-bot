@@ -1,20 +1,45 @@
 require('dotenv').config();
-const { 
-    Client, 
-    GatewayIntentBits, 
-    ModalBuilder, 
-    TextInputBuilder, 
-    ActionRowBuilder, 
-    TextInputStyle, 
-    EmbedBuilder 
+const {
+    Client,
+    GatewayIntentBits,
+    ModalBuilder,
+    TextInputBuilder,
+    ActionRowBuilder,
+    TextInputStyle,
+    EmbedBuilder
 } = require('discord.js');
 
-const client = new Client({ 
+// 1. Health Check for Hugging Face
+const dns = require('node:dns');
+dns.setDefaultResultOrder('ipv4first');
+
+const { setGlobalDispatcher, Agent } = require('undici');
+setGlobalDispatcher(new Agent({ 
+    connect: { timeout: 60000 }, // 60 seconds network-level timeout
+    headersTimeout: 60000,
+    bodyTimeout: 60000
+}));
+
+const http = require('http');
+http.createServer((req, res) => {
+    res.write('LockIn Bot is active.');
+    res.end();
+}).listen(7860);
+
+// 2. Debug: Check if Token exists (without showing it)
+console.log(`Checking Environment: TOKEN is ${process.env.TOKEN ? 'PRESENT' : 'MISSING'}`);
+
+const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds, 
-        GatewayIntentBits.GuildMessages, 
-        GatewayIntentBits.MessageContent 
-    ] 
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ],
+    // 3. Increase timeout for slow cloud networks
+    rest: {
+        timeout: 60000,
+        retries: 3
+    }
 });
 
 const PREFIX = '!';
@@ -34,7 +59,7 @@ client.on('messageCreate', async (message) => {
     if (command === 'test') {
         await message.reply('Bot testing. Works. No worries.');
     }
-    
+
     // You can easily add more prefix commands here
     if (command === 'ping') {
         await message.reply('Pong!');
@@ -106,7 +131,7 @@ client.on('interactionCreate', async (interaction) => {
         const failed = interaction.fields.getTextInputValue('failedInput');
 
         // Create the formatted message string
-        const formattedMessage = 
+        const formattedMessage =
             `🗓️ **Date:** ${date}\n` +
             `⏱️ **Study time:** ${time}\n` +
             `📚 **What I studied:** ${studied}\n` +
@@ -127,4 +152,6 @@ client.on('interactionCreate', async (interaction) => {
     }
 });
 
-client.login(process.env.TOKEN);
+client.login(process.env.TOKEN).catch(err => {
+    console.error("FAILED TO LOGIN:", err);
+});
