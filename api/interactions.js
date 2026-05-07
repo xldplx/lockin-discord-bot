@@ -11,9 +11,8 @@ module.exports = async (req, res) => {
     const signature = req.headers['x-signature-ed25519'];
     const timestamp = req.headers['x-signature-timestamp'];
     
-    // We need the raw body for verification
-    // Vercel gives us req.body but we might need it as a string
-    const rawBody = JSON.stringify(req.body);
+    // Use rawBody if provided (by our local server or Vercel config)
+    const rawBody = req.rawBody || JSON.stringify(req.body);
 
     const isValidRequest = verifyKey(
         rawBody,
@@ -23,8 +22,13 @@ module.exports = async (req, res) => {
     );
 
     if (!isValidRequest) {
+        console.error('❌ [Verification Failed] Signature or Public Key is incorrect.');
+        console.error('Headers:', { signature, timestamp });
+        console.error('PUBLIC_KEY is:', process.env.PUBLIC_KEY ? 'Set' : 'MISSING');
         return res.status(401).end('invalid request signature');
     }
+
+    console.log('✅ [Verification Success] Interaction received:', req.body.type);
 
     // 2. Handle the interaction
     const interaction = req.body;
