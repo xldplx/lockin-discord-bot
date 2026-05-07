@@ -1,23 +1,68 @@
 require('dotenv').config();
-const { REST, Routes, SlashCommandBuilder } = require('discord.js');
+const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
 
 const commands = [
-    new SlashCommandBuilder()
-        .setName('daily')
-        .setDescription('Open the daily task entry form')
-].map(command => command.toJSON());
+    {
+        name: 'daily',
+        description: 'Open the daily study check-in form',
+    },
+    {
+        name: 'history',
+        description: 'View your last 5 study check-ins',
+    },
+    {
+        name: 'stats',
+        description: 'See your total study sessions and time',
+    },
+    {
+        name: 'pomodoro',
+        description: 'Start a focus timer (informational)',
+        options: [
+            {
+                name: 'work',
+                description: 'Work duration in minutes (default: 25)',
+                type: ApplicationCommandOptionType.Integer,
+                required: false,
+            },
+            {
+                name: 'break',
+                description: 'Break duration in minutes (default: 5)',
+                type: ApplicationCommandOptionType.Integer,
+                required: false,
+            },
+        ],
+    },
+    {
+        name: 'stop',
+        description: 'Stop your active timer',
+    },
+    {
+        name: 'ping',
+        description: 'Check the bot latency',
+    },
+    {
+        name: 'help',
+        description: 'Show the help menu',
+    },
+    {
+        name: 'test',
+        description: 'Basic bot check',
+    }
+];
 
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
     try {
-        console.log('🔄 Registering slash commands...');
+        console.log('Started refreshing application (/) commands.');
+
         await rest.put(
-            Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
-            { body: commands }
+            Routes.applicationCommands(process.env.APP_ID),
+            { body: commands },
         );
-        console.log('✅ Success! Commands are now live in your server.');
+
+        console.log('Successfully reloaded application (/) commands.');
     } catch (error) {
-        console.error('❌ Error:', error);
+        console.error(error);
     }
 })();
